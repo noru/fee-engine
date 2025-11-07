@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	fee_engine "github.com/noru/fee-engine"
+	feecalc "github.com/noru/feecalc"
 	"github.com/shopspring/decimal"
 )
 
@@ -54,14 +54,14 @@ func main() {
 }
 
 func basic() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 1000.0,
 			"rate":   0.02,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	engine.AddRule(`$(amount * rate, "USD")`)
 
@@ -76,13 +76,13 @@ func basic() {
 }
 
 func negative() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 1000.0,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	engine.AddRule(`$(100.0, "USD")`) // Base fee
 	engine.AddRule(`$(-20.0, "USD")`) // Discount
@@ -100,13 +100,13 @@ func negative() {
 }
 
 func contextUpdate() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"value": 10.0,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	// Using assignment syntax: value = value * 2
 	engine.AddRule(`value = value * 2`)
@@ -122,11 +122,11 @@ func contextUpdate() {
 }
 
 func multiCurrencies() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars:     make(map[string]interface{}),
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	engine.AddRule(`[$(100.0, "USD"), $(200.0, "EUR")]`)
 	engine.AddRule(`$(50.0, "USD")`)
@@ -143,13 +143,13 @@ func multiCurrencies() {
 }
 
 func resumable() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 1000.0,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	// Add 5 rules
 	for i := 0; i < 5; i++ {
@@ -174,13 +174,13 @@ func resumable() {
 }
 
 func exprArray() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 1000.0,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	// Expression array: returns array of expression strings to execute
 	engine.AddRule(`[$(amount * 0.01, "USD"), $(amount * 0.02, "EUR")]`)
@@ -198,14 +198,14 @@ func exprArray() {
 }
 
 func decimalPrecision() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 100.1,
 			"rate":   0.015,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	// Using decimal functions for precision
 	engine.AddRule(`$(Mul(amount, rate), "USD")`)
@@ -225,14 +225,14 @@ func decimalPrecision() {
 }
 
 func assignment() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 1000.0,
 			"rate":   0.02,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
 	}
-	engine := fee_engine.New(ctx)
+	engine := feecalc.New(ctx)
 
 	// Update amount and calculate fee in one rule
 	engine.AddRule(`amount = amount * 2; $(amount * rate, "USD")`)
@@ -249,15 +249,15 @@ func assignment() {
 }
 
 func executionTrace() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount": 1000.0,
 			"rate":   0.02,
 		},
-		FeeItems: make([]fee_engine.FeeItem, 0),
-		Logs:     make([]fee_engine.Log, 0),
+		FeeItems: make([]feecalc.FeeItem, 0),
+		Logs:     make([]feecalc.Log, 0),
 	}
-	engine := fee_engine.New(ctx).EnableLog()
+	engine := feecalc.New(ctx).EnableLog()
 
 	// Add multiple rules with different operations
 	rules := []string{
@@ -314,14 +314,14 @@ func executionTrace() {
 }
 
 func OnRamp() {
-	ctx := &fee_engine.Context{
+	ctx := &feecalc.Context{
 		Vars: map[string]interface{}{
 			"amount":             5828.0,
 			"fiat_currency":      "KES",
 			"crypto_currency":    "USDT",
 			"network_fee":        0.27,
-			"kes_to_usd_rate":    0.01,
-			"crypto_to_usd_rate": 0.99231,
+			"kes2usd_rate":       0.01,
+			"crypto2usd_rate":    0.99231,
 			"fiat_fee_rate":      0.01,
 			"fiat_fee_fixed":     100.0,
 			"wello_fee_rate":     0.01,
@@ -338,17 +338,17 @@ func OnRamp() {
 			"fee_in_usd":   0.0,
 		},
 	}
-	engine := fee_engine.New(ctx).EnableLog()
+	engine := feecalc.New(ctx).EnableLog()
 
 	result, err := engine.AddRule(
-		`network_fee = network_fee * crypto_to_usd_rate / kes_to_usd_rate; $(network_fee, fiat_currency)`, // calculate the network fee in KES
+		`network_fee = network_fee * crypto2usd_rate / kes2usd_rate; $(network_fee, fiat_currency)`, // calculate the network fee in KES
 		`amount = amount + network_fee`, // add the network fee to the base amount
 		`fiat_fee = amount * fiat_fee_rate + fiat_fee_fixed; $(fiat_fee, fiat_currency)`,                 // fiat fee
 		`wello_fee = amount * wello_fee_rate + wello_fee_fixed; $(wello_fee, fiat_currency)`,             // wello fee
 		`merchant_fee = amount * merchant_fee_rate + merchant_fee_fixed; $(merchant_fee, fiat_currency)`, // merchant fee
 		`total_fee = fiat_fee + wello_fee + merchant_fee + network_fee`,                                  // total fee in KES
 		`total_fee = total_fee - coupon; coupon > 0 ? $(-coupon, coupon_currency) : nil`,                 // apply coupon if it is greater than 0
-		`fee_in_usd = total_fee * kes_to_usd_rate`,                                                       // total fee in USD
+		`fee_in_usd = total_fee * kes2usd_rate`,                                                          // total fee in USD
 		`[$(-total_fee, fiat_currency), $(fee_in_usd, "USD")]`,                                           // return the total fee in USD and KES
 	).Execute()
 

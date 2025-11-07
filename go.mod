@@ -1,4 +1,4 @@
-module github.com/noru/fee-engine
+module github.com/noru/feecalc
 
 go 1.25.0
 

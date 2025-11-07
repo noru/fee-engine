@@ -1,4 +1,4 @@
-package fee_engine
+package feecalc
 
 import (
 	"sync"

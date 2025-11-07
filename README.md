@@ -15,22 +15,22 @@ A fee calculation engine that supports expression-based fee rule computation.
 ### Installation
 
 ```bash
-go get github.com/noru/fee-engine
+go get github.com/noru/feecalc
 ```
 
 ### Basic Usage
 
 ```go
-import fee_engine "github.com/noru/fee-engine"
+import "github.com/noru/feecalc"
 
-ctx := &fee_engine.Context{
+ctx := &feecalc.Context{
     Vars: map[string]interface{}{
         "amount": 1000.0,
         "rate":   0.02,
     },
-    FeeItems: make([]fee_engine.FeeItem, 0),
+    FeeItems: make([]feecalc.FeeItem, 0),
 }
-engine := fee_engine.New(ctx)
+engine := feecalc.New(ctx)
 
 engine.AddRule(`$(amount * rate, "USD")`)
 
@@ -49,9 +49,11 @@ fmt.Printf("Fee: %s %s\n", result.Summary[0].Amount.String(), result.Summary[0].
 Use `$(amount, currency)` syntax to calculate fees:
 
 ```go
-engine.AddRule(`$(100.0, "USD")`)           // Fixed fee
-engine.AddRule(`$(amount * rate, "USD")`)   // Variable-based fee
-engine.AddRule(`$(-20.0, "USD")`)           // Negative fee (discount)
+engine.AddRules(
+    `$(100.0, "USD")`,           // Fixed fee
+    `$(amount * rate, "USD")`,   // Variable-based fee
+    `$(-20.0, "USD")`,           // Negative fee (discount)
+)
 ```
 
 ### Variable Assignment
@@ -59,8 +61,7 @@ engine.AddRule(`$(-20.0, "USD")`)           // Negative fee (discount)
 Use assignment syntax to update context variables:
 
 ```go
-engine.AddRule(`amount = amount * 2`)
-engine.AddRule(`rate = 0.03`)
+engine.AddRule(`amount = amount * 2; rate = 0.03`)
 ```
 
 ### Multi-statement Rules
@@ -118,7 +119,7 @@ result2, _ := engine.ExecuteN(2)
 Enable logging to track execution:
 
 ```go
-engine := fee_engine.New(ctx).EnableLog()
+engine := feecalc.New(ctx).EnableLog()
 result, _ := engine.Execute()
 
 // Access logs
@@ -178,14 +179,14 @@ The OnRamp example demonstrates a complex fee calculation scenario for cryptocur
 ### Code Example
 
 ```go
-ctx := &fee_engine.Context{
+ctx := &feecalc.Context{
     Vars: map[string]interface{}{
         "amount":             5828.0,
         "fiat_currency":      "KES",
         "crypto_currency":    "USDT",
         "network_fee":        0.27,
-        "kes_to_usd_rate":    0.01,
-        "crypto_to_usd_rate": 0.99231,
+        "kes2usd_rate":    0.01,
+        "crypto2usd_rate": 0.99231,
         "fiat_fee_rate":      0.01,
         "fiat_fee_fixed":     100.0,
         "wello_fee_rate":     0.01,
@@ -201,11 +202,11 @@ ctx := &fee_engine.Context{
         "fee_in_usd":         0.0,
     },
 }
-engine := fee_engine.New(ctx).EnableLog()
+engine := feecalc.New(ctx).EnableLog()
 
 result, err := engine.AddRule(
     // Convert network fee from crypto to fiat currency
-    `network_fee = network_fee * crypto_to_usd_rate / kes_to_usd_rate; $(network_fee, fiat_currency)`,
+    `network_fee = network_fee * crypto2usd_rate / kes2usd_rate; $(network_fee, fiat_currency)`,
     
     // Add network fee to base amount
     `amount = amount + network_fee`,
@@ -226,9 +227,9 @@ result, err := engine.AddRule(
     `total_fee = total_fee - coupon; coupon > 0 ? $(-coupon, coupon_currency) : nil`,
     
     // Convert total fee to USD
-    `fee_in_usd = total_fee * kes_to_usd_rate`,
+    `fee_in_usd = total_fee * kes2usd_rate`,
     
-    // Return fees in both currencies (negative for deduction)
+    // Create USD fee item, remove KES fee by adding a negative item
     `[$(-total_fee, fiat_currency), $(fee_in_usd, "USD")]`,
 ).Execute()
 ```
@@ -250,7 +251,7 @@ Fee Items:
     USD: 6.024361411000001
 
 Execution Logs of 9:
-  [1] Rule: network_fee = network_fee * crypto_to_usd_rate / kes_to_usd_rate; $(network_fee, fiat_currency)
+  [1] Rule: network_fee = network_fee * crypto2usd_rate / kes2usd_rate; $(network_fee, fiat_currency)
       Vars: map[amount:5828 network_fee:26.79 ...]
       FeeItems: 26.792370000000005 KES
   [2] Rule: amount = amount + network_fee
@@ -271,7 +272,7 @@ Execution Logs of 9:
   [7] Rule: total_fee = total_fee - coupon; coupon > 0 ? $(-coupon, coupon_currency) : nil
       Vars: map[total_fee:602.44 ...]
       FeeItems: -200 KES
-  [8] Rule: fee_in_usd = total_fee * kes_to_usd_rate
+  [8] Rule: fee_in_usd = total_fee * kes2usd_rate
       Vars: map[fee_in_usd:6.02 ...]
       FeeItems: (none)
   [9] Rule: [$(-total_fee, fiat_currency), $(fee_in_usd, "USD")]
